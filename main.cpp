@@ -69,6 +69,7 @@ bool checkShape(Shape *shape, vector<Shape *> S)
 
 int main()
 {
+    int sumTEN=0;
     vector<Point *> P;
     vector<Shape *> S;
     vector<vector<TimeExpandedNode *>> allTENs;
@@ -167,7 +168,60 @@ int main()
             S.push_back(shape);
         }
     }*/
-
+    /*for(auto& it : allpart){
+      int count = 0;
+      for (auto& a:allTENs.at(0))
+      {
+        for (auto& src : a->srcs)
+        {
+          if (it.name == src.second->name)
+          {
+            count++;
+          }
+        }
+        for (auto& tgts: a->tgts)
+        {
+           if (it.name == tgts.second->name)
+           {
+            count++;
+           }
+           
+        }
+        if (count == 1)
+        {
+          for (auto& src : a->srcs)
+          {
+           if (it.name == src.second->name)
+           {
+             src.second->time = (3.9/4 + 3.9*3/4)/(2*count);
+           }
+          }
+          for (auto& tgts: a->tgts){
+            if (it.name == tgts.second->name)
+            {
+             tgts.second->time = (3.9/4 + 3.9*3/4)/(2*count);
+            }
+          } 
+        }
+        if (count == 2)
+        {
+          for (auto& src : a->srcs)
+          {
+           if (it.name == src.second->name)
+           {
+             src.second->time = (3.9/4 + 3.9/4*3+3.9*2/4)/(4*count);
+           }
+          }
+          for (auto& tgts: a->tgts){
+            if (it.name == tgts.second->name)
+            {
+             tgts.second->time = (3.9/4 + 3.9*3/4+2*3.9*2/4)/(4*count);
+            }
+          } 
+        }
+      }
+      
+    }*/
     for (TimeExpandedNode *n : allTENs.at(0))
     {
         for (Shape *s : S)
@@ -199,9 +253,9 @@ int main()
             }
         }
     }
+    
     //cout<<"End of second nested-for loop"<<endl;
-  
-
+    
     for (Point *p : P)
     {
         int i = 0;
@@ -216,7 +270,7 @@ int main()
         // mọi point chỉ xuất hiện một lần trong tất cả các trường origin của tất cả các TENode
     }
     //cout<<"End of third nested-for loop"<<endl;
-
+    
     for (Shape *s : S)
     {
         int i = 0;
@@ -273,7 +327,7 @@ int main()
     }
     //cout<<"End of fifth nested-for loop"<<endl;
     //cout<<"DONE."<<endl;
-    vector<Point*> Points;
+    /*vector<Point*> Points;
     vector<int>  initializations = getStartedNodes(allTENs);
     for(int index : initializations){
 		spread(allTENs, 0, index, 999);
@@ -296,9 +350,10 @@ int main()
      } 
     }
     cout<<"-------------------------------------------------------"<<endl;
-    int sumTEN=0;
-    connectAllChains(allTENs,Points,1);
-    /*cout<<"-------------------------------------------------------"<<endl;
+    
+    //connectAllChains(allTENs,Points,2);
+    /*connectAllChains(allTENs,Points,1);
+    cout<<"-------------------------------------------------------"<<endl;
     std:: string filename = "intinerary.txt";
     std::string station="";
     std::map<std::string, std::vector<ArtificialStation*>> mapArtificialStations = getTimeWindows(filename,2,station);
@@ -325,14 +380,14 @@ int main()
 	 for(auto& elem : v){
 		insert(allTENs, elem);
 	 }
-    }*/
+    }
     redundants = filter(allTENs);
     remove2(redundants,allTENs);
     
     for(auto& it: allTENs)
     {
      assertTime(it,1);
-    }
+    }*/
     sumTEN = 0;
     for(auto& it : allTENs)
     {
@@ -353,12 +408,12 @@ int main()
           }
         }
     }
-    printf("Prepare\n");
     for(auto& element : starnode){
 	 assignKey(element,&autoIncreament);
     }
-    cout<<autoIncreament<<" " << COUNTER<<endl;
-    //writeFile(allTENs);
+    cout<< COUNTER<<endl;
+    //writeFile(allTENs,sumTEN);
+    writefile2(allTENs);
     //assert(checkautoincreament(autoIncreament,sumTEN));
     //assert(checkduplicate(allTENs,sumTEN));
 }
