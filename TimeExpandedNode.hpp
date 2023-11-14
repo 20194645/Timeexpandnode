@@ -599,6 +599,7 @@ void connectAllChains(std::vector<std::vector<TimeExpandedNode*>> &graph,std::ve
     {
         TimeExpandedNode* temp = isAvailableminNode(graph, origin); 
         std::vector<std::tuple<int, int, double>> chains = getChains(graph, origin);
+        //std::vector<std::pair<int, double>> newChains = createNewChains(chains,graph,H,2*3.9/4);
         std::vector<std::pair<int, double>> newChains = createNewChains(chains,graph,H,1);
         if(!newChains.empty()){
          //cout<<newChains.size()<<endl;
@@ -693,47 +694,82 @@ bool checkduplicate(std::vector<std::vector<TimeExpandedNode*>> graph,int sumten
         if(x[a->key]==0){
            x[a->key] = 1;
         }
+        else
+        {
+            cout<<a->key<<endl;
+        }
+        
     }
   }
-  for ( i = 0; i < sumten; i++){
-    if(x[i]==0){
+  /*for ( i = 0; i < sumten; i++){
+    if(x[i]!=1){
         return false;
         //count++;
     } 
-  }
+  }*/
   return true;
 }
-void writeFile(std::vector<std::vector<TimeExpandedNode*>> graph)
+void writeFile(std::vector<std::vector<TimeExpandedNode*>> graph,int sumten)
 {
+ int sumedge = 0;
  for(auto& it : graph)
  {
-    for(auto& a : it)
-    {
-        if(!a->srcs.empty())
-        {
-         for(auto& b : a->srcs)
-         {
-         if(!a->tgts.empty())
-          { for(auto& c : a->tgts)
-           {
-            myfile<<a->key<<" "<<b.first->key<<" "<<c.first->key<<" "<<"0 1"<<endl;
-           }
-          }
-          else{
-             myfile<<a->key<<" "<<b.first->key<<" "<<"NULL"<<" "<<"0 1"<<endl;
-          }
-         }
-        }
-        else{
-            for(auto& c : a->tgts)
-            {
-                 myfile<<a->key<<" "<<"NULL"<<" "<<c.first->key<<" "<<"0 1"<<endl;
+   for(auto& a : it){
+     sumedge = a->srcs.size()+sumedge+a->tgts.size();
+   }
+ }
+ myfile<<"p"<<" "<<"min"<<" "<<sumten<<" "<<sumedge<<endl;
+ for(auto& it : graph){
+    for(auto& a : it){
+        for (auto& b : a->srcs){
+            if (b.second->name.find("E0")!= std::string::npos){
+                myfile<<"n "<<b.first->key<<" 1"<<endl;
             }
         }
     }
  }
+ for(auto& it : graph){
+    for(auto& a : it){
+      for (auto& c: a->tgts)
+      {
+         if (c.second->name.find("E92")!= std::string::npos)
+         {
+              myfile<<"n "<<c.first->key<<" -1"<<endl;
+         }
+      }
+    }
+ }
+ 
+        
+ for(auto& it : graph)
+ {
+    for(auto& a : it)
+    {
+
+      for(auto& b : a->srcs)
+      {
+        myfile<<"a "<<b.first->key<<" "<<a->key<<" 0 1 "<<100*a->time<<endl;
+      }
+      for(auto& c : a->tgts){
+        myfile<<"a "<<a->key<<" "<<c.first->key<<" "<<"0 1 "<<100*c.first->time<<endl;
+      }
+    }
+ }
 }
+void writefile2(std::vector<std::vector<TimeExpandedNode*>> graph){
+   for(auto& it : graph)
+   {
+    for(auto& a : it)
+    {
 
-
-
+      for(auto& b : a->srcs)
+      {
+        myfile<<b.second->name<<" "<<"||";
+      }
+      for(auto& c : a->tgts){
+        myfile<<c.second->name<<endl;
+      }
+    }
+   }
+}
 
