@@ -14,160 +14,112 @@ using namespace std;
 ofstream myfile1("Result2.txt");
 std::vector<part> allpart;
 
-// Hàm getCoincedence như sau
-vector<pair<int, int>> getConcidences(vector<pair<TimeExpandedNode *, Shape *>> *srcs,
-                                      vector<pair<TimeExpandedNode *, Shape *>> *tgts)
-{
-    vector<pair<int, int>> result;
-    for (int i = 0; i < srcs->size(); i++)
-    {
-        for (int j = 0; j < tgts->size(); j++)
-        {
-            if (srcs->at(i).second->equals(tgts->at(j).second))
-            {
-                result.push_back(make_pair(i, j));
-            }
-        }
-    }
-    return result;
-}
 
 // Hàm dùng Regular Expression để bắt chuỗi
-string strSmatch(string str, string W_regex)
-{
-    regex word_regex(W_regex);
-    smatch match;
-    regex_search(str, match, word_regex);
-    return match.str();
-}
-
-// Hàm kiểm tra xem điểm point có trong vector P hay không
-bool checkPoint(Point *point, vector<Point *> P)
-{
-    if (P.empty())
-        return false;
-    for (Point *p : P)
-    {
-        if (point->equals(p))
-            return true;
-    }
-    return false;
-}
-
-// Hàm kiểm tra xem shape có trong vector S hay không
-bool checkShape(Shape *shape, vector<Shape *> S)
-{
-    if (S.empty())
-        return false;
-    for (Shape *s : S)
-    {
-        if (shape->equals(s))
-            return true;
-    }
-    return false;
-}
 
 int main()
 {
     int sumTEN=0;
-    vector<Point *> P;
     vector<Shape *> S;
     vector<vector<TimeExpandedNode *>> allTENs;
     vector<TimeExpandedNode *> tempTENs;
     allTENs.push_back(tempTENs);
-
+    vector<Point*> P;
     //ifstream input("/mnt/d/MinGW64/AllParts.txt");
     //input.is_open();
     int counter = 0;
     makeallpart();
+    set<string> pointstr;
+    map<string,vector<Shape*>> startshape;
+    map<string,vector<Shape*>> endshape;
+    map<string,TimeExpandedNode*> mapTEN;
+    set<string> shapestr;
     for(auto& a : allpart)
     {
         Shape *shape = new Shape();
         //shape->setName(a.name);
         Point *firstPoint = new Point();
+        a.Point1.first = std::round(a.Point1.first * 100.0)/ 100.0;
+        a.Point1.second = std::round(a.Point1.second * 100.0)/ 100.0;
         firstPoint->setPoint(a.Point1.first,a.Point1.second);
         Point *lastPoint = new Point();
+        a.Point2.first = std::round(a.Point2.first * 100.0)/ 100.0;
+        a.Point2.second =  std::round(a.Point2.second * 100.0)/ 100.0;
         lastPoint->setPoint(a.Point2.first,a.Point2.second);
         if(!firstPoint->equals(lastPoint)){
-         shape->setPoint(firstPoint, lastPoint);
-         shape->setName(a.name);
-         //cout<<shape->name<<endl;
-          if (!checkPoint(firstPoint, P))
-          {
+          shape->setPoint(firstPoint, lastPoint);
+          shape->setName(a.name);
+          string coord1 = to_string(firstPoint->x)+" "+to_string(firstPoint->y);
+          string coord2 = to_string(lastPoint->x)+" "+to_string(lastPoint->y);
+          
+          if (pointstr.find(coord1)==pointstr.end()){
             P.push_back(firstPoint);
+            pointstr.insert(coord1);
             TimeExpandedNode *n1 = new TimeExpandedNode();
             n1->setTENode(firstPoint);
             allTENs.at(0).push_back(n1);
           }
-
-          if (!checkPoint(lastPoint, P))
-          {
+          if (pointstr.find(coord2)==pointstr.end()){
             P.push_back(lastPoint);
-            TimeExpandedNode *n2 = new TimeExpandedNode();
-            n2->setTENode(lastPoint);
-            allTENs.at(0).push_back(n2);
+            pointstr.insert(coord2);
+            TimeExpandedNode *n1 = new TimeExpandedNode();
+            n1->setTENode(lastPoint);
+            allTENs.at(0).push_back(n1);
           }
-
-          if (!checkShape(shape, S))
-          {
+          string shapecoord = coord1+"_"+coord2;
+          if (shapestr.find(shapecoord)==shapestr.end()){
             S.push_back(shape);
           }
         }
-        //
     }
-    /*while (!input.eof())
+    for(auto& s : S){
+      string firstcoord = to_string(s->start->x)+" "+to_string(s->start->y);
+      string lastcoord = to_string(s->end->x)+" "+to_string(s->end->y);
+      if (pointstr.find(firstcoord)!=pointstr.end()){
+        startshape[firstcoord].push_back(s);
+      }
+      if(pointstr.find(lastcoord)!=pointstr.end()){
+        endshape[lastcoord].push_back(s);
+      }
+    }
+    
+    for (TimeExpandedNode *n : allTENs.at(0))
     {
-    	
-        string str;
-        getline(input, str);
-        //cout<<str<<endl;
-        if (strSmatch(str, "[_A-Z0-9]+(?= )") == "")
-            break;
-        Shape *shape = new Shape();
-  
-        shape->setName(strSmatch(str, "[_A-Z0-9]+(?= )"));
-        //cout<<shape->name<<endl;
-        string point_1 = strSmatch(str, "[_][-0-9.,]+(?=_)");
-        string point_2 = strSmatch(str, "[^_A-Z ][-0-9.,]+(?=$)");
-
-        string s1 = "[^_ ][-0-9.,]+(?=,)";
-        string s2 = "[^_,][-0-9.]+(?=$)";
-        string s3 = "[^_,][-0-9.]+(?=$)";
-
-        Point *firstPoint = new Point();
-        firstPoint->setPoint(std::stof(strSmatch(point_1, s1)),
-                             std::stof(strSmatch(point_1, s2)));
-        firstPoint->printPoint();
-        Point *lastPoint = new Point();
-        lastPoint->setPoint(std::stof(strSmatch(point_2, s1)),
-                            std::stof(strSmatch(point_2, s3)));
-        lastPoint->printPoint();
-	if(firstPoint->equals(lastPoint)){
-	    //cout<<"DEBUG "<<__FILE__<<":"<<__LINE__<<endl;
-	    continue;
-	}
-        shape->setPoint(firstPoint, lastPoint);
-        if (!checkPoint(firstPoint, P))
-        {
-            P.push_back(firstPoint);
-            TimeExpandedNode *n1 = new TimeExpandedNode();
-            n1->setTENode(firstPoint);
-            allTENs.at(0).push_back(n1);
+        string coord = to_string(n->origin->x)+" "+to_string(n->origin->y);
+        auto it  = startshape.find(coord);
+        if (it!=startshape.end()){
+          for (auto& a : it->second){
+            n->insertTarget(a);
+          }
         }
-
-        if (!checkPoint(lastPoint, P))
-        {
-            P.push_back(lastPoint);
-            TimeExpandedNode *n2 = new TimeExpandedNode();
-            n2->setTENode(lastPoint);
-            allTENs.at(0).push_back(n2);
+        auto it1 = endshape.find(coord);
+        if (it1!=endshape.end()){
+          for (auto& a : it1->second){
+            n->insertSource(a);
+          }
         }
-
-        if (!checkShape(shape, S))
-        {
-            S.push_back(shape);
+        mapTEN[coord] = n;
+    }
+    for (TimeExpandedNode *n : allTENs.at(0))
+    {
+      for (auto& a : n->srcs){
+        string coord = to_string(a.second->start->x)+" "+to_string(a.second->start->y);
+        auto it = mapTEN.find(coord);
+        if (it!=mapTEN.end()){
+          a.first=it->second;
         }
-    }*/
+      }
+      for (auto& a : n->tgts){
+        string coord = to_string(a.second->end->x)+" "+to_string(a.second->end->y);
+        auto it = mapTEN.find(coord);
+        if (it!=mapTEN.end()){
+          a.first=it->second;
+        }
+      }
+      
+    }
+    
+    //
     /*for(auto& it : allpart){
       int count = 0;
       for (auto& a:allTENs.at(0))
@@ -222,87 +174,46 @@ int main()
       }
       
     }*/
-    for (TimeExpandedNode *n : allTENs.at(0))
-    {
-        for (Shape *s : S)
-        {
-            if (s->start->equals(n->origin))
-            {
-                n->insertTarget(s);
-            }
-            else if (s->end->equals(n->origin))
-            {
-                n->insertSource(s);
-            }
-        }
+    map<string,int> checkpointdup;
+    for (auto &pair : checkpointdup) {
+        pair.second = 0;
     }
-    //cout<<"End of first nested-for loops"<<endl;
-    //cout<<"allTENs.at(0).size( ) = "<<allTENs.at(0).size()<<endl;
-
-    for (TimeExpandedNode *nA : allTENs.at(0))
-    {
-        for (TimeExpandedNode *nB : allTENs.at(0))
-        {
-            vector<pair<int, int>> nA_to_nB;
-            vector<pair<int, int>> nB_to_nA;
-            if (!nA->equals(nB))
-            {
-                nB_to_nA = getConcidences(&(nA->srcs), &(nB->tgts));
-                nA_to_nB = getConcidences(&(nB->srcs), &(nA->tgts));
-                nA->insertSourcesAndTargets(nB, nB_to_nA, nA_to_nB);
-            }
-        }
+    for (TimeExpandedNode *n : allTENs.at(0)){
+      string coord =  to_string(n->origin->x)+" "+to_string(n->origin->y);
+      assert(n->time == 0);
+      checkpointdup[coord]++;
     }
-    
-    //cout<<"End of second nested-for loop"<<endl;
-    
-    for (Point *p : P)
-    {
-        int i = 0;
-        for (TimeExpandedNode *n : allTENs.at(0))
-        {
-            if (p->equals(n->origin))
-                i++;
-            assert(n->time == 0);
-            // Tất cả các trường time của tất cả các TENode đều bằng 0
-        }
-        assert(i = 1);
-        // mọi point chỉ xuất hiện một lần trong tất cả các trường origin của tất cả các TENode
+    for (auto &pair : checkpointdup) {
+      assert(pair.second == 1);
     }
-    //cout<<"End of third nested-for loop"<<endl;
-    
-    for (Shape *s : S)
-    {
-        int i = 0;
-        for (TimeExpandedNode *n : allTENs.at(0))
-        {
-            for (pair<TimeExpandedNode *, Shape *> x : n->srcs)
-            {
-                if (s->equals(x.second))
-                    i++;
-
-                assert(x.first != nullptr && x.second != nullptr);
-                // Trong các vector srcs và tgts của các TENode, nếu vector nào khác rỗng thì tất cả các trường của tất
-                // cả các phần tử trong vector đều khác null.
-            }
-
-            for (pair<TimeExpandedNode *, Shape *> x : n->tgts)
-            {
-                if (s->equals(x.second))
-                    i++;
-		if(x.first == nullptr || x.second == nullptr){
-			cout<<"DEBUYG"<<endl;
-		}
-                assert(x.first != nullptr && x.second != nullptr);
-                // Trong các vector srcs và tgts của các TENode, nếu vector nào khác rỗng thì tất cả các trường của tất
-                // cả các phần tử trong vector đều khác null.
-            }
-        }
-        assert(i = 2);
-        // Mọi shape chỉ xuất hiện hai lần trong tất cả các trường srcs và tgts của tất cả các TENode.
+    assert(checkpointdup.size()==P.size());
+    map<string,int> checkshapedup;
+    for (auto &pair : checkshapedup) {
+        pair.second = 0;
     }
-    //cout<<"End of forth nested-for loop"<<endl;
-
+    for (TimeExpandedNode *n : allTENs.at(0)){
+      for (pair<TimeExpandedNode *, Shape *> x : n->srcs){
+         assert(x.first != nullptr && x.second != nullptr);
+         string coord1 = to_string(x.second->start->x)+" "+to_string(x.second->start->y);
+         string coord2 = to_string(x.second->end->x)+" "+to_string(x.second->end->y);
+         string coord = coord1 + coord2;
+         checkshapedup[coord]++;
+      }
+      for (pair<TimeExpandedNode *, Shape *> x : n->tgts){
+        if(x.first == nullptr || x.second == nullptr){
+			   cout<<"DEBUYG"<<endl;
+		    }
+        assert(x.first != nullptr && x.second != nullptr);
+        string coord1 = to_string(x.second->start->x)+" "+to_string(x.second->start->y);
+        string coord2 = to_string(x.second->end->x)+" "+to_string(x.second->end->y);
+        string coord = coord1 + coord2;
+        checkshapedup[coord]++;        
+      }
+    }
+    for (auto &pair : checkshapedup) {
+        assert(pair.second == 2);
+    }
+    assert(checkshapedup.size()==S.size());
     for (TimeExpandedNode *n : allTENs.at(0))
     {
         int sum = n->srcs.size() + n->tgts.size();
@@ -321,16 +232,18 @@ int main()
                     i++;
             }
         }
+       
         assert(sum == i);
         // Nếu phần tử n có tổng độ dài của srcs và tgts của nó là X. Thì số lần xuất hiện của n trong các vector
         // srcs và tgts của các TENodes khác cũng sẽ bằng đúng X
     }
+    
     //cout<<"End of fifth nested-for loop"<<endl;
     //cout<<"DONE."<<endl;
-    /*vector<Point*> Points;
+    int count = 0;
     vector<int>  initializations = getStartedNodes(allTENs);
     for(int index : initializations){
-		spread(allTENs, 0, index, 999);
+		  spread(allTENs, 0, index,50);
     }
 
     //cout<<allTENs.size()<<endl;
@@ -344,17 +257,21 @@ int main()
     }
     for(auto& it : allTENs)
     {
-     for(auto& a : it )
-     {
-        Points.push_back(a->origin);
-     } 
+     sumTEN = sumTEN+it.size();
     }
+    cout<<sumTEN<<endl;
     cout<<"-------------------------------------------------------"<<endl;
-    
+   
+    connectAllChains(allTENs,50,1);
+     for(auto& it : allTENs)
+    {
+     sumTEN = sumTEN+it.size();
+    }
+    cout<<sumTEN<<endl;
     //connectAllChains(allTENs,Points,2);
-    /*connectAllChains(allTENs,Points,1);
+    //(allTENs,P,90);
     cout<<"-------------------------------------------------------"<<endl;
-    std:: string filename = "intinerary.txt";
+    /*std:: string filename = "intinerary.txt";
     std::string station="";
     std::map<std::string, std::vector<ArtificialStation*>> mapArtificialStations = getTimeWindows(filename,2,station);
     replaceStation(allTENs,station);
@@ -388,7 +305,7 @@ int main()
     {
      assertTime(it,1);
     }*/
-    sumTEN = 0;
+    /*sumTEN = 0;
     for(auto& it : allTENs)
     {
     
@@ -411,9 +328,9 @@ int main()
     for(auto& element : starnode){
 	 assignKey(element,&autoIncreament);
     }
-    cout<< COUNTER<<endl;
+    cout<< COUNTER<<endl;*/
     //writeFile(allTENs,sumTEN);
-    writefile2(allTENs);
+    
     //assert(checkautoincreament(autoIncreament,sumTEN));
-    //assert(checkduplicate(allTENs,sumTEN));
+    //assert(checkduplicate(allTENs,sumTEN));*/
 }

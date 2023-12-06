@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <string.h>
@@ -244,7 +243,15 @@ class ArtificialStation : public Station{
 };
 
 TimeExpandedNode* isAvailable(std::vector<std::vector<TimeExpandedNode*>> graph, Point* origin, double time){
-     for(auto& vec : graph)
+    for(auto& vec : graph){
+      if (vec.at(0)->time == time){
+        for (auto& it : vec){
+          if(it->origin->equals(origin)) return it;
+        }
+      }
+    }
+    return nullptr;
+     /*for(auto& vec : graph)
      {
       for(auto& it : vec){
         if(it->origin->equals(origin)&& it->time==time)
@@ -253,8 +260,8 @@ TimeExpandedNode* isAvailable(std::vector<std::vector<TimeExpandedNode*>> graph,
         }
       }
      }
-     return nullptr;
-    }
+     return nullptr;*/
+}
 bool isavailable(std::vector<std::vector<TimeExpandedNode*>> graph, double time, int index){
    int count = 0;
    for(auto& it : graph.at(index))
@@ -284,6 +291,10 @@ void insert(std::vector<std::vector<TimeExpandedNode*>> &graph, TimeExpandedNode
      
 } 
 void spread(std::vector<std::vector<TimeExpandedNode*>> &graph, int m, int n, double H) {
+    map<string,int> checkTENdup;
+    for (auto &pair : checkTENdup) {
+        pair.second = 0;
+    }
     TimeExpandedNode* node = graph[m][n];
     std::queue<TimeExpandedNode*> Q;
     Q.push(node);
@@ -293,31 +304,40 @@ void spread(std::vector<std::vector<TimeExpandedNode*>> &graph, int m, int n, do
         Q.pop();
         
         for (auto& pair : temp->tgts) {
-            Shape* s = pair.second;
-            double time = temp->time + s->getWeight();
-            if (time < H) {
+            string coord = to_string(pair.first->origin->x)+" "+to_string(pair.first->origin->y);
+            if (checkTENdup[coord]!=1){
+                checkTENdup[coord]=1;
+                Shape* s = pair.second;
+                double time = temp->time + s->getWeight();
+                if (time < H) {
                 Point* origin = s->end;  TimeExpandedNode* n = pair.first;
                 TimeExpandedNode* foundItem = isAvailable(graph, origin, time);
                 if (foundItem == nullptr) {
                     TimeExpandedNode* newNode = new TimeExpandedNode();
                     newNode->setTENode(origin);
                     newNode->time= time;
+                    for(auto& it : n->tgts){
+                      newNode->tgts.push_back(make_pair(nullptr,it.second));
+                    }
                     newNode->tgts = n->tgts;
                     pair.first = newNode;
                     foundItem = newNode;
-                }
-                int index = foundItem->indexInSources(s);
-                if (index != -1) {
+                 }
+                 int index = foundItem->indexInSources(s);
+                 if (index != -1) {
                     foundItem->srcs[index].first = temp;
-                }
-                else {
+                 }
+                 else {
                     foundItem->srcs.push_back(std::make_pair(temp, s));
+                 }
+                 insert(graph, foundItem); // Gọi hàm đã làm ở câu (d)
+                 Q.push(foundItem);
                 }
-                insert(graph, foundItem); // Gọi hàm đã làm ở câu (d)
-                Q.push(foundItem);
             }
+           
         }
     }
+    map<string, int>().swap(checkTENdup);
 }
 
 std::vector<std::pair<int, int>> filter(std::vector<std::vector<TimeExpandedNode*>> &graph){
@@ -399,153 +419,156 @@ void assertTime(std::vector<TimeExpandedNode*> graph, double v){
     if(stage == 1) cout<<"Error assertTime"<<endl;
 }
 // code bai 4 dang can hoan thien 
-bool compare(std::tuple<int, int, double>a ,std::tuple<int, int, double> b)
-{
- return (get<2>(a) < get<2>(b));
-}
-std::vector<std::tuple<int, int, double>> getChains(std::vector<std::vector<TimeExpandedNode*>> graph, Point* origin)
-{  
-    std::vector<std::tuple<int, int, double>> a;
-    int i,k;
-    for(i = 0;i<graph.size();i++){
-        for(k= 0;k<graph[i].size();k++)
-         {
-            if(graph.at(i).at(k)->origin->equals(origin))
-            {
-             a.push_back(make_tuple(i,k,graph[i][k]->time));
-            }
-         }
-    }
-    sort(a.begin(),a.end(),compare);
-    return a;
-}
-std::vector<std::pair<int, double>> createNewChains(std::vector<std::tuple<int, int, double>> oldChains,
-           std::vector<std::vector<TimeExpandedNode*>> graph, 
-           double H, double deltaT)
-{
-    int count = 0,steps = 0;
-    int oldSize = oldChains.size();
-    int fixedindex = get<1>(oldChains.at(0));
-    std::vector<std::pair<int, double>> newChains;
-    while (count < oldSize -1)
-    {
-        auto& prev = oldChains.at(count);
-        auto& next = oldChains.at(count+1);
-        steps = 0;
-        if(get<2>(prev)<get<2>(next)-deltaT)
-        {
-            steps = floor((get<2>(next)-get<2>(prev))/deltaT);
-            int size = newChains.size( );
-            for(int i = 0; i < steps; i++){
-                newChains.push_back(make_pair(i+size,get<2>(prev)+deltaT*(i+1)));
-            }
+std::map<std::string, std::vector<TimeExpandedNode*>> getchains(std::vector<std::vector<TimeExpandedNode*>> graph) {
+    std::map<std::string, std::vector<TimeExpandedNode*>> result;
+    for (auto& it : graph) {
+        for (auto& TEN : it) {
+            std::string coord = std::to_string(TEN->origin->x) + " " + std::to_string(TEN->origin->y);
+            result[coord].push_back(TEN); // Corrected 'pushback' to 'push_back'
         }
-        count++;
-    }
-    auto& last = oldChains.at(oldSize-1);
-    steps =floor(H-get<2>(last));
-    int size = newChains.size()+oldChains.size();
-    int i ;
-    for( i = 0; i < steps; i++){
-		newChains.push_back(std::make_pair(i + size, get<2>(last) + deltaT*(1 + i)));
-	}
-	return newChains;
-
-}
-std::vector<std::pair<int, int>>insert2(std::vector<std::vector<TimeExpandedNode*>> &graph, std::vector<std::pair<int, double>> newChains, TimeExpandedNode* p)
-{
-    std::vector<std::pair<int, int>> result;
-    for(auto& elem : newChains)
-    {
-        if(isAvailable(graph,p->origin,elem.second)!=nullptr)
-        {
-
-         continue;
-        }
-        TimeExpandedNode * newNode = new TimeExpandedNode();
-        newNode->setTENode(p->origin);
-        newNode->time = elem.second;
-        newNode->tgts=p->tgts;
-        if(graph.size() <= elem.first)
-        {
-            std::vector<TimeExpandedNode*> v;
-            v.push_back(newNode);
-            graph.push_back(v);
-            result.push_back(make_pair(graph.size( ) - 1, 0));
-        } 
-        else{
-		auto& currVector = graph.at(elem.first);
-		if(currVector.size( ) == 0 || currVector.at(0)->time == elem.second ){
-				graph.at(elem.first).push_back(newNode);
-				result.push_back(make_pair(elem.first,graph.at(elem.first).size() -1));
-		}
-        else{
-				std::vector<TimeExpandedNode*> v;
-                v.push_back(newNode);
-				graph.insert(graph.begin() + elem.first,1, v);
-				result.push_back(std::make_pair(elem.first, 0));
-		 }
-
-        }
-
     }
     return result;
 }
+std::vector<std::pair<double, TimeExpandedNode*>> makenewchains(std::vector<TimeExpandedNode*> chain, double H, double delta) {
+    std::vector<std::pair<double, TimeExpandedNode*>> result;
+
+    int i = 0;
+    auto& root = chain.at(0);
+    while (i < chain.size() - 1) {
+        auto& pre = chain.at(i);
+        auto& next = chain.at(i + 1);
+        int steps = floor((next->time - pre->time) / delta);
+
+        for (int k = 0; k < steps; ++k) {
+            TimeExpandedNode* newNode = new TimeExpandedNode();
+            newNode->setTENode(root->origin);
+            newNode->time = pre->time + delta * (k + 1);
+            //newNode->tgts = pre->tgts;
+            for(auto& it : root->tgts){
+                      newNode->tgts.push_back(make_pair(nullptr,it.second));
+            }
+            result.push_back(std::make_pair(newNode->time, newNode));
+        }
+        ++i;
+    }
+
+    auto& last = chain.back(); // Accessing the last element of 'chain'
+    int steps = floor((H - last->time) / delta);
+    for (int j = 0; j < steps; ++j) {
+        TimeExpandedNode* newNode = new TimeExpandedNode();
+        newNode->setTENode(root->origin);
+        newNode->time = last->time + delta * (j + 1);
+        //newNode->tgts = last->tgts;
+        for(auto& it : root->tgts){
+            newNode->tgts.push_back(make_pair(nullptr,it.second));
+        }
+        result.push_back(std::make_pair(newNode->time, newNode));
+    }
+
+    return result;
+}
+
+std::vector<std::pair<int, int>> insert2(std::vector<std::vector<TimeExpandedNode*>> &graph,std::vector<std::pair<double,TimeExpandedNode*>> newchains){
+ std::vector<std::pair<int, int>> result;
+ int i,k;
+ for (auto& newchain : newchains){
+  int size = graph.size();
+  if (newchain.first > graph[size-1].at(0)->time)
+  {
+    std::vector<TimeExpandedNode*> newTEN;
+    newTEN.push_back(newchain.second);
+    graph.push_back(newTEN);
+    result.push_back(make_pair(graph.size()-1,0));
+  }
+  else{
+    int count = 0;
+    for (i = 0;i<size;i++){
+     if (newchain.first==graph.at(i).at(0)->time){
+      graph.at(i).push_back(newchain.second);
+      result.push_back(make_pair(i,graph.at(i).size()-1));
+      count++;
+     }
+    }
+    if (count == 0){
+      i = 0;
+      while(0==0){
+        if(newchain.first<graph.at(i).at(0)->time){
+          break;
+        }
+        i++;
+      }
+      vector<TimeExpandedNode*> newTEN;
+      graph.insert(graph.begin()+i,1,newTEN);
+    }
+    
+  }
+ }
+ return result;
+} 
 bool checkInsertion(std::vector<std::vector<TimeExpandedNode*>> graph, 
-	std::vector<std::pair<int, double>> newChains, 
-		TimeExpandedNode* p){
+	std::vector<std::pair<double,TimeExpandedNode*>> newChains){
 	for(auto& elem : newChains){
-		if(isAvailable(graph, p->origin, elem.second)!=nullptr){
+		if(isAvailable(graph,elem.second->origin, elem.first)!=nullptr){
 			return true;
 		}
 	}
 	return false;
 }
-bool checkResult(std::vector<std::vector<TimeExpandedNode*>> graph, 
-	std::vector<std::pair<int, double>> newChains, 
-		std::vector<std::pair<int, int>> newPositions,
-		TimeExpandedNode* p){
-int i = 0;
-	for(auto& elem : newChains){
-        if(i<newPositions.size())
-        {
-         auto& pos = newPositions.at(i);
-		 if(!graph.at(pos.first).at(pos.second)->origin->equals(p->origin) || 
-			graph.at(pos.first).at(pos.second)->time != elem.second
-			){
-			return false;
-		 }
-        }
-		i++;
-	}
-	return true;
+bool checkresult(std::vector<std::vector<TimeExpandedNode*>> graph,std::vector<std::pair<int, int>> newpos,
+std::vector<std::pair<double,TimeExpandedNode*>> newChains){
+  int i;
+  for ( i = 0; i < newpos.size() ; i++)
+  {
+    if (!graph.at(newpos.at(i).first).at(newpos.at(i).second)->origin->equals(newChains.at(i).second->origin)||
+    graph.at(newpos.at(i).first).at(newpos.at(i).second)->time!=newChains.at(i).first)
+    {
+      return false;
+    }
+  }
+  return true;
 }
-std::vector<std::pair<int, int>>  merge(std::vector<std::tuple<int, int, double>> oldChains,
-						std::vector<std::pair<int, int>> newChains){
-	int count = 0, i = 0, j = 0;
-	std::vector<std::pair<int, int>> result ;
-	int sizeOld = oldChains.size( ), sizeNew = newChains.size( );
-	int size = oldChains.size( ) + newChains.size( );
-	while(count < size && i < sizeOld && j < sizeNew){
-		if( get<0>(oldChains.at(i)) < newChains.at(j).first){
-			result.push_back(std::make_pair(i, get<1>(oldChains.at(i))));
-			i++;
-		}
-		else if(get<0>(oldChains.at(i)) > newChains.at(j).first){
-			result.push_back(std::make_pair(j, newChains.at(j).second));
-			j++;
-		}
-		else{ //trường hợp này nghĩa là get<0>(oldChains.at(i)) == newChains.at(j).first
-			//tuy vậy điều này gần như không được - và không thể xảy ra
-			result.push_back(std::make_pair(i, get<1>(oldChains.at(i))));
-			i++; j++;
-		}
-		count++;
-	}
-	return result;
+void spread2(std::vector<std::vector<TimeExpandedNode*>> &graph, int m, int n, double H){
+    TimeExpandedNode* node = graph[m][n];
+    std::queue<TimeExpandedNode*> Q;
+    Q.push(node);
+    while (!Q.empty()){
+        TimeExpandedNode* temp = Q.front();
+        Q.pop();
+        for (auto& pair : temp->tgts) {
+        Shape* s = pair.second;
+        double time = temp->time + s->getWeight();
+        if (time < H) {
+            Point* origin = s->end;  TimeExpandedNode* n = pair.first;
+            TimeExpandedNode* foundItem = isAvailable(graph, origin, time);
+            if (foundItem == nullptr) {
+                TimeExpandedNode* newNode = new TimeExpandedNode();
+                newNode->setTENode(origin);
+                newNode->time= time;
+                if (n!= nullptr)
+                {
+                 for(auto& it : n->tgts){
+                    newNode->tgts.push_back(make_pair(nullptr,it.second));
+                 }
+                }
+                pair.first = newNode;
+                foundItem = newNode;
+                }
+                int index = foundItem->indexInSources(s);
+                if (index != -1) {
+                    foundItem->srcs[index].first = temp;
+                }
+                else {
+                    foundItem->srcs.push_back(std::make_pair(temp, s));
+                }
+                insert(graph, foundItem); // Gọi hàm đã làm ở câu (d)
+                Q.push(foundItem);
+            }
+        }
+        
+    }
 }
 
-void assertNewOrder(std::vector<std::pair<int, int>> newOrder, std::vector<std::vector<TimeExpandedNode*>> graph)
+/*void assertNewOrder(std::vector<std::pair<int, int>> newOrder, std::vector<std::vector<TimeExpandedNode*>> graph)
 {
     for(auto& e1 : newOrder){
 	   for(auto& e2 : newOrder){
@@ -554,10 +577,10 @@ void assertNewOrder(std::vector<std::pair<int, int>> newOrder, std::vector<std::
 		}
 	  }
     }
-}
+}*/
 
 
-std::vector<std::vector<TimeExpandedNode*>> connectChains(
+/*std::vector<std::vector<TimeExpandedNode*>> connectChains(
 std::vector<std::vector<TimeExpandedNode*>> &graph,
 					std::vector<std::pair<int, int>> newOrder)
 {
@@ -576,43 +599,18 @@ std::vector<std::vector<TimeExpandedNode*>> &graph,
     }
     return graph;
 
-}
-TimeExpandedNode* isAvailableminNode(std::vector<std::vector<TimeExpandedNode*>> graph, Point* origin)
-{ 
-    TimeExpandedNode* tmp = nullptr;
-    double min = 9999;
-    for(auto& vec : graph)
-     {
-      for(auto& it : vec){
-        if(it->origin->equals(origin)&& it->time < min)
-        {
-            tmp = it;
-            min = it->time;
-        }
-      }
-     }
-    return tmp;
-}
-void connectAllChains(std::vector<std::vector<TimeExpandedNode*>> &graph,std::vector<Point*> points,double H)
+}*/
+void connectAllChains(std::vector<std::vector<TimeExpandedNode*>> &graph,double H,double delta)
 {
-   for(auto& origin : points)
-    {
-        TimeExpandedNode* temp = isAvailableminNode(graph, origin); 
-        std::vector<std::tuple<int, int, double>> chains = getChains(graph, origin);
-        //std::vector<std::pair<int, double>> newChains = createNewChains(chains,graph,H,2*3.9/4);
-        std::vector<std::pair<int, double>> newChains = createNewChains(chains,graph,H,1);
-        if(!newChains.empty()){
-         //cout<<newChains.size()<<endl;
-         std::vector<std::pair<int, int>>newPos = insert2(graph, newChains, temp);
-         assert(checkInsertion(graph, newChains, temp));
-         //cout<<newChains.size()<<" "<<newPos.size()<<endl; 
-	     assert(checkResult(graph, newChains, newPos, temp));
-         for(auto& elem : newPos){
-            spread(graph, elem.first, elem.second, 1000);
-	     }
-         std::vector<std::pair<int, int>> newOrder = merge(chains, newPos);
-         connectChains(graph, newOrder);
-        } 
+    map<string,vector<TimeExpandedNode*>> oldchain = getchains(graph);
+    for (auto& pair : oldchain){
+      std::vector<std::pair<double,TimeExpandedNode*>> newchains = makenewchains(pair.second,H,delta);
+      vector<std::pair<int, int>> newpos = insert2(graph,newchains);
+      assert(checkInsertion(graph,newchains));
+      assert(checkresult(graph,newpos,newchains));
+      for (auto& pos : newpos){
+       spread2(graph,pos.first,pos.second,50);
+      }
     }
 }
 void replaceStation (std::vector<std::vector<TimeExpandedNode*>> &graph,std::string stations){
@@ -745,7 +743,6 @@ void writeFile(std::vector<std::vector<TimeExpandedNode*>> graph,int sumten)
  {
     for(auto& a : it)
     {
-
       for(auto& b : a->srcs)
       {
         myfile<<"a "<<b.first->key<<" "<<a->key<<" 0 1 "<<100*a->time<<endl;
@@ -761,14 +758,20 @@ void writefile2(std::vector<std::vector<TimeExpandedNode*>> graph){
    {
     for(auto& a : it)
     {
-
-      for(auto& b : a->srcs)
+      for(auto& b : a->srcs){
+        myfile<<b.second->name<<" ";
+      }
+      myfile<<"||";
+      myfile<<a->origin->x<<" "<<a->origin->y<<"||";
+      if (a->tgts.empty())
       {
-        myfile<<b.second->name<<" "<<"||";
+        myfile<<endl;
       }
+      
       for(auto& c : a->tgts){
-        myfile<<c.second->name<<endl;
+        myfile<<c.second->name<<" ";
       }
+      myfile<<endl;
     }
    }
 }
