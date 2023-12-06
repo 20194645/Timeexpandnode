@@ -1,5 +1,6 @@
 #include "readxml.hpp"
 using namespace std;
+ofstream myfile2("allPart.txt");
 typedef std::pair<double, double> Point;
 typedef struct{
    std::pair<double, double> Point1;
@@ -17,7 +18,7 @@ typedef struct{
 vector<std::pair<Point, Point>> listPoints(Point A, Point B, double x)
 {
     double d = sqrt(pow(B.first - A.first, 2) + pow(B.second - A.second, 2));
-    int n = int(d / x);
+    int n = abs(int(d / x));
     float x1, y1, x2, y2;
     vector<std::pair<Point, Point>> list;
     double ratio = x / d;
@@ -35,6 +36,7 @@ vector<std::pair<Point, Point>> listPoints(Point A, Point B, double x)
         y2 = A.second + (i + 1) * (B.second - A.second) * ratio;
         list.push_back({Point({x1, y1}), Point({x2, y2})});
     }
+    
     if (d / x != int(d / x))
     {
         list.push_back({Point({x2, y2}), B});
@@ -48,7 +50,7 @@ void splitEdge(double x, edge *e)
     int i = 0;
     for (std::pair<Point, Point> point : list)
     {
-        //myfile << e->id << " " << i << "_" << fixed << setprecision(2) << point.first.first << "," << point.first.second << "_" << point.second.first << "," << point.second.second << "\n";
+        myfile2 << e->id << " " << i << "_" << fixed << setprecision(2) << point.first.first << "," << point.first.second << "_" << point.second.first << "," << point.second.second << "\n";
         part a;
         a.name = e->id;
         a.i=i;
@@ -68,7 +70,7 @@ void splitJunc(double x, junc *j)
         vector<std::pair<Point, Point>> list = listPoints(points[i], points[i + 1], x);
         for (std::pair<Point, Point> point : list)
         {
-            //myfile << j->id << " " << n << "_" << point.first.first << "," << point.first.second << "_" << point.second.first << "," << point.second.second << "\n";
+            myfile2 << j->id << " " << n << "_" << point.first.first << "," << point.first.second << "_" << point.second.first << "," << point.second.second << "\n";
             part a;
             a.name = j->id;
             a.i = n;
@@ -88,7 +90,7 @@ void makeallpart(){
     vector<edge> newedges;
     pugi::xml_document doc;
     //myfile.open("AllParts.txt");
-    if (!doc.load_file("/mnt/d/MinGW64/lab2/net.net.xml"))
+    if (!doc.load_file("/mnt/d/MinGW64/lab2/vd013.net.xml"))
     {
         cout << "Can't read" << endl;
     }
@@ -227,5 +229,5 @@ void makeallpart(){
         splitJunc(3.9, &j);
     }
     juncs.clear();
-
+    //cout<<allpart.size()<<endl;
 }
